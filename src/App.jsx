@@ -2,6 +2,7 @@ import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import Header from './components/Header';
 import CreateNote from './pages/CreateNote';
 import ViewNotes from './pages/ViewNotes';
+import EditNote from './pages/EditNote'; // 👈 New import added
 
 function App() {
   return (
@@ -12,6 +13,7 @@ function App() {
           <Routes>
             <Route path="/" element={<CreateNote />} />
             <Route path="/notes" element={<ViewNotes />} />
+            <Route path="/edit/:id" element={<EditNote />} /> {/* 👈 New route added */}
           </Routes>
         </main>
       </div>

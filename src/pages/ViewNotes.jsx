@@ -1,19 +1,32 @@
+// 👇 Import necessary libraries and components
 import { useState, useEffect } from "react";
-import NoteCard from "../components/NoteCard";
-
-import { StickyNote, Trash2 } from "lucide-react";
-import axios from "axios";
 import { Link } from "react-router-dom";
+import axios from "axios";
+
+import NoteCard from "../components/NoteCard";
+import { StickyNote } from "lucide-react";
+
 const ViewNotes = () => {
+  // 👇 State for storing all notes
   const [notes, setNotes] = useState([]);
+
+  // 👇 State for handling filtered display
+  const [filteredNotes, setFilteredNotes] = useState([]);
+
+  // 👇 State for search input
+  const [searchQuery, setSearchQuery] = useState("");
+
+  // 👇 State for loading and errors
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
+  // 👇 Function to fetch notes from backend API
   const loadNotes = async () => {
     setLoading(true);
     try {
       const response = await axios.get("http://localhost:3001/api/notes");
       setNotes(response.data);
+      setFilteredNotes(response.data); // Initialize filtered with full list
       setError(null);
     } catch (err) {
       console.error("Error fetching notes:", err);
@@ -23,24 +36,40 @@ const ViewNotes = () => {
     }
   };
 
+  // 👇 Load notes when component mounts
   useEffect(() => {
     loadNotes();
   }, []);
 
+  // 👇 Function to handle note deletion
   const handleDelete = async (id) => {
-    if (!window.confirm("Are you sure you want to delete this note?")) {
-      return;
-    }
+    if (!window.confirm("Are you sure you want to delete this note?")) return;
 
     try {
       await axios.delete(`http://localhost:3001/api/notes/${id}`);
-      setNotes(notes.filter((note) => note.id !== id));
+      const updatedNotes = notes.filter((note) => note.id !== id);
+      setNotes(updatedNotes);
+      setFilteredNotes(updatedNotes); // Update filtered notes after deletion
     } catch (err) {
       console.error("Error deleting note:", err);
       alert("Failed to delete note. Please try again.");
     }
   };
 
+  // 👇 Function to filter notes based on search input
+  const handleSearch = (e) => {
+    const query = e.target.value.toLowerCase();
+    setSearchQuery(query);
+
+    const filtered = notes.filter((note) =>
+      note.title.toLowerCase().includes(query) ||
+      note.content.toLowerCase().includes(query)
+    );
+
+    setFilteredNotes(filtered);
+  };
+
+  // 👇 Loading state
   if (loading) {
     return (
       <div className="flex justify-center items-center h-64">
@@ -51,6 +80,7 @@ const ViewNotes = () => {
     );
   }
 
+  // 👇 Error state
   if (error) {
     return (
       <div className="text-center py-10">
@@ -65,6 +95,7 @@ const ViewNotes = () => {
     );
   }
 
+  // 👇 Empty notes state
   if (notes.length === 0) {
     return (
       <div className="text-center py-16">
@@ -87,17 +118,29 @@ const ViewNotes = () => {
     );
   }
 
+  // 👇 Final rendered UI
   return (
     <div className="max-w-6xl mx-auto">
-      <div className="mb-8">
+      <div className="mb-6">
         <h1 className="text-2xl font-bold text-gray-800 mb-2">Your Notes</h1>
-        <p className="text-gray-600">
-          {notes.length} {notes.length === 1 ? "note" : "notes"} stored
+        <p className="text-gray-600 mb-4">
+          {filteredNotes.length}{" "}
+          {filteredNotes.length === 1 ? "note" : "notes"} found
         </p>
+
+        {/* 👇 Search input field */}
+        <input
+          type="text"
+          placeholder="Search notes..."
+          value={searchQuery}
+          onChange={handleSearch}
+          className="w-full sm:w-1/2 px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-yellow-400"
+        />
       </div>
 
+      {/* 👇 Notes Grid */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-        {notes.map((note) => (
+        {filteredNotes.map((note) => (
           <NoteCard key={note.id} note={note} onDelete={handleDelete} />
         ))}
       </div>

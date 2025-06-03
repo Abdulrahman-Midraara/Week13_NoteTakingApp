@@ -1,18 +1,27 @@
+// ✅ UPDATED: schema/notes.js
+// -----------------------------
+// Add support for optional tags field with constraints
+
 import { z } from "zod";
 
-// TODO: create the title and content schema, 
-// Make sure the title is required and the content is required
-// Make sure the title is max 50 characters and the content is max 500 characters
-
-// 👇 Schema definition using Zod for note validation
 export const noteSchema = z.object({
+  // TODO: create the title and content schema, 
+  // Make sure the title is required and the content is required
+  // Make sure the title is max 50 characters and the content is max 500 characters
+
   title: z
     .string()
-    .min(1, "Title is required") // Ensures the title field is not empty
-    .max(50, "Title must be at most 50 characters"), // Limits title length to 50
+    .min(1, "Title is required")
+    .max(50, "Title must be 50 characters or less"),
 
   content: z
     .string()
-    .min(1, "Content is required") // Ensures the content field is not empty
-    .max(500, "Content must be at most 500 characters"), // Limits content length to 500
+    .min(1, "Content is required")
+    .max(500, "Content must be 500 characters or less"),
+
+  // 👇 Optional array of tags - strings, each tag max 15 characters, limit 5 tags max
+  tags: z
+    .array(z.string().max(15, "Each tag must be 15 characters or less"))
+    .max(5, "You can only add up to 5 tags")
+    .optional(),
 });

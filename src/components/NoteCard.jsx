@@ -1,54 +1,65 @@
-import { Trash2 } from "lucide-react";
+// TODO: Import motion from framer-motion
+import { motion } from "framer-motion";
+import { Edit, Trash2, Share2 } from "lucide-react";
+import { Link } from "react-router-dom";
 
+// Props: note (object), onDelete (function)
 const NoteCard = ({ note, onDelete }) => {
-  const { id, title, content } = note;
+  const handleShare = () => {
+    const noteUrl = `${window.location.origin}/edit/${note.id}`;
+    navigator.clipboard.writeText(noteUrl);
+    alert("Link copied to clipboard!");
+  };
 
   return (
-    <div
-      className="relative"
-      style={{
-        filter: "drop-shadow(0 2px 4px #b266ff)", // lighter purple shadow
-        borderRadius: "6px", // less corner radius
-      }}
+    // 👇 Animated wrapper using Framer Motion
+    <motion.div
+      initial={{ opacity: 0, y: 20 }}       // Start slightly below and transparent
+      animate={{ opacity: 1, y: 0 }}        // Animate to visible and lifted up
+      transition={{ duration: 0.3 }}        // Smooth transition
+      className="bg-yellow-200 p-4 rounded-lg shadow-note relative transition transform hover:scale-[1.02]"
     >
+      {/* Note Title */}
+      <h3 className="text-lg font-semibold">{note.title}</h3>
+
+      {/* Note Content — rendered as HTML if using rich text */}
       <div
-        className="p-6"
-        style={{
-          background: "#d9ff3e",
-          color: "#111",
-          borderRadius: "6px",
-          minHeight: "180px",
-          boxShadow: "0 1px 2px rgba(0,0,0,0.06)", // lighter shadow
-          fontFamily: "inherit",
-          display: "flex",
-          flexDirection: "column",
-          backgroundImage:
-            "repeating-linear-gradient(to bottom, transparent, transparent 23px, #c7e97b 24px)",
-          backgroundSize: "100% 24px",
-        }}
-      >
-        <div className="flex justify-between items-start mb-3">
-          <h3 className="text-2xl font-light mb-2" style={{ fontWeight: 400 }}>
-            {title}
-          </h3>
-          <button
-            onClick={() => onDelete(id)}
-            aria-label="Delete note"
-            className="text-gray-500 hover:text-red-500 p-1 rounded-full hover:bg-red-50 transition-colors"
-          >
-            <Trash2 size={18} />
-          </button>
+        className="mt-2 text-sm"
+        dangerouslySetInnerHTML={{ __html: note.content }}
+      />
+
+      {/* Tag Display */}
+      {note.tags?.length > 0 && (
+        <div className="mt-3 flex flex-wrap gap-1">
+          {note.tags.map((tag, index) => (
+            <span
+              key={index}
+              className="text-xs bg-yellow-300 text-yellow-800 px-2 py-1 rounded"
+            >
+              {tag}
+            </span>
+          ))}
         </div>
-        <div className="flex-grow mb-2">
-          <p
-            className="text-base whitespace-pre-line"
-            style={{ fontWeight: 300 }}
-          >
-            {content}
-          </p>
-        </div>
+      )}
+
+      {/* Actions: Edit, Delete, Share */}
+      <div className="flex gap-4 mt-4 text-gray-700">
+        {/* Edit */}
+        <Link to={`/edit/${note.id}`} className="hover:text-blue-600">
+          <Edit size={16} />
+        </Link>
+
+        {/* Delete */}
+        <button onClick={() => onDelete(note.id)} className="hover:text-red-600">
+          <Trash2 size={16} />
+        </button>
+
+        {/* Share */}
+        <button onClick={handleShare} className="hover:text-green-600">
+          <Share2 size={16} />
+        </button>
       </div>
-    </div>
+    </motion.div>
   );
 };
 

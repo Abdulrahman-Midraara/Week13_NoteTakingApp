@@ -1,62 +1,56 @@
-// ✅ CreateNoteForm.jsx with ReactQuill rich text editor integration
-
-// 👇 Import necessary React and utility libraries
-import { useForm, Controller } from "react-hook-form";
+// Import necessary libraries and components
+import { useState, useEffect } from "react";
+import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import axios from "axios";
-import { useNavigate } from "react-router-dom";
-import { useState } from "react";
-import ReactQuill from "react-quill";
-import "react-quill/dist/quill.snow.css"; // ✅ Quill default theme
-
-// 👇 Import the Zod schema for note validation
+import { useNavigate, useParams } from "react-router-dom";
 import { noteSchema } from "../schema/notes";
-
 import { Save } from "lucide-react";
 
-const CreateNoteForm = () => {
-  const [isSubmitting, setIsSubmitting] = useState(false);
+const EditNote = () => {
+  // State for handling loading and form feedback
+  const [loading, setLoading] = useState(true);
+  const [initialNote, setInitialNote] = useState(null);
   const [successMessage, setSuccessMessage] = useState("");
-  const [tagInput, setTagInput] = useState("");
   const [tags, setTags] = useState([]);
+  const [tagInput, setTagInput] = useState("");
 
+  // Hooks for navigation and route parameters
   const navigate = useNavigate();
+  const { id } = useParams();
 
-  // ✅ Setup react-hook-form with zod validation and Controller for ReactQuill
+  // Set up form using react-hook-form and zod
   const {
     register,
     handleSubmit,
-    control,
-    watch,
-    setValue,
     formState: { errors },
-    reset,
+    setValue,
+    watch,
   } = useForm({
     resolver: zodResolver(noteSchema),
-    defaultValues: {
-      title: "",
-      content: "",
-    },
   });
 
-  // ✅ Submit note to the backend
-  const sendToTheServer = async (data) => {
-    try {
-      setIsSubmitting(true);
-      data.tags = tags;
-      await axios.post("http://localhost:3001/api/notes", data);
-      setSuccessMessage("Note created successfully!");
-      reset();
-      setTags([]);
-      setTimeout(() => navigate("/"), 1500);
-    } catch (error) {
-      console.error("Failed to create note:", error.message);
-    } finally {
-      setIsSubmitting(false);
-    }
-  };
+  // Fetch note by ID when component mounts
+  useEffect(() => {
+    const fetchNote = async () => {
+      try {
+        const response = await axios.get(`http://localhost:3001/api/notes/${id}`);
+        const note = response.data;
+        setInitialNote(note);
+        setValue("title", note.title);
+        setValue("content", note.content);
+        setTags(note.tags || []);
+      } catch (error) {
+        console.error("Failed to fetch note:", error);
+      } finally {
+        setLoading(false);
+      }
+    };
 
-  // ✅ Handle tag addition
+    fetchNote();
+  }, [id, setValue]);
+
+  // Handle tag addition
   const addTag = () => {
     const trimmed = tagInput.trim();
     if (
@@ -65,33 +59,47 @@ const CreateNoteForm = () => {
       tags.length < 5 &&
       trimmed.length <= 15
     ) {
-      setTags((prev) => [...prev, trimmed]);
+      setTags([...tags, trimmed]);
       setTagInput("");
     }
   };
 
+  // Handle tag removal
   const removeTag = (tagToRemove) => {
-    setTags((prev) => prev.filter((tag) => tag !== tagToRemove));
+    setTags(tags.filter((tag) => tag !== tagToRemove));
   };
+
+  // Handle note update
+  const onSubmit = async (data) => {
+    try {
+      data.tags = tags;
+      await axios.put(`http://localhost:3001/api/notes/${id}`, data);
+      setSuccessMessage("Note updated successfully!");
+      setTimeout(() => navigate("/notes"), 1500);
+    } catch (error) {
+      console.error("Failed to update note:", error);
+    }
+  };
+
+  if (loading) {
+    return <p className="text-center text-gray-600">Loading note...</p>;
+  }
 
   return (
     <>
-      <h1 className="text-2xl font-bold mb-4">Create Note</h1>
+      <h1 className="text-2xl font-bold mb-4">Edit Note</h1>
 
-      {/* ✅ Success message */}
       {successMessage && (
         <p className="text-green-600 text-sm mb-4">{successMessage}</p>
       )}
 
       <form
-        onSubmit={handleSubmit(sendToTheServer)}
+        onSubmit={handleSubmit(onSubmit)}
         className="space-y-4 bg-white shadow-md rounded-md p-6 w-full max-w-lg mx-auto"
       >
-        {/* ✅ Title Input */}
+        {/* Title Input */}
         <div>
-          <label htmlFor="title" className="block text-sm font-medium mb-1">
-            Title
-          </label>
+          <label htmlFor="title" className="block text-sm font-medium mb-1">Title</label>
           <input
             id="title"
             type="text"
@@ -107,36 +115,27 @@ const CreateNoteForm = () => {
           )}
         </div>
 
-        {/* ✅ Rich Text Editor using ReactQuill */}
+        {/* Content Input */}
         <div>
-          <label htmlFor="content" className="block text-sm font-medium mb-1">
-            Content
-          </label>
-          <Controller
-            name="content"
-            control={control}
-            render={({ field }) => (
-              <ReactQuill
-                theme="snow"
-                value={field.value}
-                onChange={field.onChange}
-                className="bg-white rounded-md"
-              />
-            )}
+          <label htmlFor="content" className="block text-sm font-medium mb-1">Content</label>
+          <textarea
+            id="content"
+            rows="5"
+            placeholder="Write your note here..."
+            {...register("content")}
+            className="w-full border border-gray-300 p-2 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
           />
           <div className="text-xs text-gray-500 mt-1">
             {watch("content")?.length || 0}/500
           </div>
           {errors.content && (
-            <p className="text-red-500 text-sm mt-1">
-              {errors.content.message}
-            </p>
+            <p className="text-red-500 text-sm mt-1">{errors.content.message}</p>
           )}
         </div>
 
-        {/* ✅ Tags Input */}
+        {/* Tag Input */}
         <div>
-          <label className="block text-sm font-medium mb-1">Tags</label>
+          <label className="block text-sm font-medium mb-1">Tags (comma-separated)</label>
           <input
             type="text"
             value={tagInput}
@@ -172,18 +171,17 @@ const CreateNoteForm = () => {
           </div>
         </div>
 
-        {/* ✅ Submit Button */}
+        {/* Submit Button */}
         <button
           type="submit"
-          disabled={isSubmitting}
-          className="flex items-center justify-center gap-2 bg-blue-600 hover:bg-blue-700 text-white py-2 px-4 rounded-md disabled:opacity-50 w-full"
+          className="flex items-center justify-center gap-2 bg-blue-600 hover:bg-blue-700 text-white py-2 px-4 rounded-md w-full"
         >
           <Save className="w-4 h-4" />
-          {isSubmitting ? "Saving..." : "Save Note"}
+          Update Note
         </button>
       </form>
     </>
   );
 };
 
-export default CreateNoteForm;
+export default EditNote;
